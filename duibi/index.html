@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漫画/追剧/动漫/小说/软件资源平台</title>
+<link href="yibazhan/css/remixicon.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;
+  min-height:100vh;overflow-x:hidden;color:#1a1a2e;background:#eef1f5;
+}
+
+/* 背景层 */
+.bg-layer{
+  position:fixed;inset:0;z-index:-2;
+  background:linear-gradient(135deg,#e8ecf5 0%,#d5ddef 30%,#e0d5ef 60%,#f0e4f0 100%);
+}
+.bg-layer::after{
+  content:'';position:absolute;inset:0;
+  backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);
+  background:rgba(255,255,255,0.08);
+}
+
+/* 顶部公告 */
+.top-notice{position:sticky;top:0;z-index:100;padding:10px 20px;text-align:center}
+.notice-inner{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,0.72);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.6);
+  border-radius:50px;padding:8px 24px;
+  font-size:12px;color:#636e72;
+  box-shadow:0 2px 16px rgba(0,0,0,0.04);
+}
+.notice-inner .bell{font-size:16px;color:#a29bfe}
+
+/* 头部 */
+.header{text-align:center;padding:28px 16px 8px}
+.site-name{
+  font-size:26px;font-weight:700;letter-spacing:3px;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.site-title{
+  font-size:12px;font-weight:500;color:#8395a7;letter-spacing:2px;
+  margin-top:6px;
+}
+
+/* 楼层 */
+.floor{max-width:920px;margin:24px auto;padding:0 16px}
+.floor-header{
+  display:flex;align-items:center;justify-content:center;
+  gap:10px;margin-bottom:16px;
+}
+.floor-header::before,.floor-header::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(102,126,234,0.15),transparent);
+}
+.floor-icon{
+  width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:#fff;
+}
+.floor-icon.hot{background:linear-gradient(135deg,#667eea,#764ba2)}
+.floor-icon.download{background:linear-gradient(135deg,#667eea,#5b86e5)}
+.floor-icon.safe{background:linear-gradient(135deg,#667eea,#764ba2)}
+.floor-label{font-size:15px;font-weight:700;color:#2d3436;white-space:nowrap;letter-spacing:1px}
+
+/* 楼层区分 */
+.floor-wrap{
+  background:rgba(255,255,255,0.18);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.3);
+  border-radius:22px;
+  padding:22px 16px;
+  margin-bottom:20px;
+}
+
+/* 卡片网格 */
+.card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* 卡片 */
+.card{
+  background:rgba(255,255,255,0.68);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.75);
+  border-radius:16px;padding:18px 10px 14px;
+  text-align:center;text-decoration:none;color:#1a1a2e;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  transition:all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  position:relative;box-shadow:0 2px 12px rgba(0,0,0,0.03);
+}
+.card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 12px 36px rgba(102,126,234,0.12);
+  border-color:rgba(102,126,234,0.25);
+  background:rgba(255,255,255,0.88);
+}
+.card:active{transform:scale(0.97)}
+
+/* 卡片图标 */
+.card .ic{
+  width:46px;height:46px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:21px;flex-shrink:0;color:#fff;
+  overflow:hidden;background:rgba(255,255,255,0.5);
+}
+.card .ic img{width:100%;height:100%;object-fit:cover;border-radius:13px}
+/* 备用色系（无图标时） */
+.ic.pri{background:linear-gradient(135deg,#667eea,#764ba2)}
+.ic.sec{background:linear-gradient(135deg,#ee5a6f,#f093a0)}
+
+.card .name{font-size:13px;font-weight:600;line-height:1.4;color:#2d3436}
+.card .sub{font-size:10px;color:#8395a7;line-height:1.3;font-weight:500}
+.card .tag{font-size:10px;font-weight:500;padding:2px 10px;border-radius:20px;white-space:nowrap}
+.tag.r1{background:rgba(102,126,234,0.1);color:#667eea}
+.tag.r2{background:rgba(238,90,111,0.1);color:#ee5a6f}
+.card .extract{
+  font-size:10px;padding:3px 10px;border-radius:20px;
+  background:rgba(238,90,111,0.1);color:#ee5a6f;
+  cursor:pointer;transition:all 0.2s;
+}
+.card .extract:hover{background:rgba(238,90,111,0.2)}
+
+/* 公告卡片 - 跑马灯 */
+.card-tip{
+  grid-column:1/-1;
+  background:rgba(255,255,255,0.55);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.6);
+  border-radius:12px;padding:14px 20px;margin:6px 0;
+  text-align:center;font-size:12px;color:#636e72;font-weight:500;
+  line-height:1.6;text-decoration:none;transition:all 0.3s;
+  overflow:hidden;position:relative;
+}
+.card-tip:hover{background:rgba(255,255,255,0.75)}
+.card-tip .marquee-wrap{
+  display:inline-block;white-space:nowrap;
+  animation:marqueeScroll 14s linear infinite;
+}
+@keyframes marqueeScroll{
+  0%{transform:translateX(100%)}
+  100%{transform:translateX(-100%)}
+}
+
+/* 左侧竖排书签提示 */
+.bookmark-tip{
+  display:none;
+}
+
+/* 登录引导弹窗 */
+.login-guide-overlay{
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;visibility:hidden;transition:all 0.3s ease;
+}
+.login-guide-overlay.active{opacity:1;visibility:visible}
+.login-guide-modal{
+  background:rgba(255,255,255,0.95);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,0.8);
+  border-radius:28px;
+  padding:36px 28px 30px;
+  text-align:center;
+  box-shadow:0 24px 80px rgba(0,0,0,0.18);
+  transform:scale(0.85) translateY(20px);
+  transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  max-width:92%;width:92%;position:relative;
+}
+.login-guide-overlay.active .login-guide-modal{transform:scale(1) translateY(0)}
+.login-guide-modal .guide-title{
+  font-size:20px;font-weight:800;margin-bottom:14px;letter-spacing:1px;
+  background:linear-gradient(135deg,#ff6b00,#ffc832);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.login-guide-modal .guide-desc{
+  font-size:15px;color:#fff;line-height:1.7;margin-bottom:16px;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  padding:12px 16px;border-radius:14px;text-align:left;font-weight:500;
+}
+.login-guide-modal .guide-steps{
+  text-align:left;font-size:15px;color:#333;line-height:2.2;
+  padding:14px 18px;
+  background:linear-gradient(135deg,rgba(255,200,50,0.12),rgba(255,107,0,0.08));
+  border-radius:14px;margin-bottom:20px;
+  border:1px solid rgba(255,180,0,0.25);
+}
+.login-guide-modal .guide-steps .step-num{
+  display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;
+  background:linear-gradient(135deg,#ff6b00,#ffc832);color:#fff;
+  border-radius:50%;font-size:12px;font-weight:700;margin-right:6px;
+}
+.login-guide-modal .guide-steps b{color:#e65c00;font-weight:700}
+.login-guide-modal .guide-steps .step-bookmark{color:#667eea;font-weight:700}
+.login-guide-modal .btn-logged{
+  width:100%;padding:15px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,#ff6b00,#ffc832);color:#fff;
+  font-size:17px;font-weight:700;cursor:pointer;transition:all 0.2s;
+  letter-spacing:2px;
+  box-shadow:0 6px 20px rgba(255,107,0,0.35);
+}
+.login-guide-modal .btn-logged:hover{opacity:0.9;box-shadow:0 8px 28px rgba(255,107,0,0.45)}
+
+/* 好评图弹窗 */
+.praise-overlay{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,0.35);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;visibility:hidden;transition:all 0.3s ease;
+}
+.praise-overlay.active{opacity:1;visibility:visible}
+
+.praise-modal{
+  background:rgba(255,255,255,0.82);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,0.7);
+  border-radius:24px;
+  padding:28px 22px 20px;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.12);
+  transform:scale(0.85) translateY(20px);
+  transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  max-width:380px;width:92%;max-height:80vh;overflow-y:auto;position:relative;
+}
+.praise-overlay.active .praise-modal{transform:scale(1) translateY(0)}
+
+.praise-modal .close-btn{
+  position:absolute;top:12px;right:14px;
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(0,0,0,0.06);border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:14px;color:#636e72;transition:all 0.2s;
+}
+.praise-modal .close-btn:hover{background:rgba(0,0,0,0.12);color:#2d3436}
+.praise-modal .modal-title{font-size:17px;font-weight:700;color:#2d3436;margin-bottom:4px}
+.praise-modal .modal-desc{font-size:12px;color:#8395a7;margin-bottom:16px}
+.praise-modal .praise-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.praise-modal .praise-item{
+  background:rgba(255,255,255,0.9);border:1px solid rgba(0,0,0,0.06);
+  border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.04);
+}
+.praise-modal .praise-item img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+.praise-modal .praise-item .save-btn{
+  display:block;text-align:center;padding:6px;
+  font-size:11px;font-weight:600;color:#667eea;
+  text-decoration:none;cursor:pointer;border-top:1px solid rgba(0,0,0,0.04);
+  transition:background 0.2s;
+}
+.praise-modal .praise-item .save-btn:hover{background:rgba(102,126,234,0.06)}
+.praise-modal .praise-empty{padding:30px;color:#8395a7;font-size:13px}
+
+/* 图片预览放大遮罩（苹果长按保存用） */
+.praise-preview-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,0.85);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;visibility:hidden;transition:all 0.3s ease;
+}
+.praise-preview-overlay.active{opacity:1;visibility:visible}
+.praise-preview-overlay img{
+  max-width:90%;max-height:75vh;border-radius:8px;
+  object-fit:contain;
+}
+.praise-preview-overlay .preview-tip{
+  color:#fff;font-size:13px;margin-top:16px;
+  background:rgba(255,255,255,0.15);padding:8px 20px;border-radius:20px;
+}
+.praise-preview-overlay .preview-close{
+  position:absolute;top:20px;right:20px;
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,0.15);border:none;
+  color:#fff;font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* 主推卡片 */
+.card-featured{
+  grid-column:1/-1;
+  background:rgba(255,255,255,0.72);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.7);
+  border-radius:16px;padding:18px 22px;
+  text-decoration:none;color:#1a1a2e;
+  display:flex;align-items:center;gap:14px;
+  transition:all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  box-shadow:0 2px 16px rgba(0,0,0,0.04);
+  position:relative;overflow:hidden;
+}
+.card-featured::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(102,126,234,0.06),rgba(118,75,162,0.06));
+  opacity:0;transition:opacity 0.3s;
+}
+.card-featured:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 36px rgba(102,126,234,0.12);
+  border-color:rgba(102,126,234,0.2);
+}
+.card-featured:hover::before{opacity:1}
+.card-featured .ic{width:52px;height:52px;border-radius:14px;font-size:26px;flex-shrink:0;overflow:hidden;background:rgba(255,255,255,0.5)}
+.card-featured .ic img{width:100%;height:100%;object-fit:cover;border-radius:14px}
+.card-featured .feat-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.card-featured .feat-name{font-size:16px;font-weight:700;color:#2d3436}
+.card-featured .feat-desc{font-size:12px;color:#8395a7;font-weight:500}
+.card-featured .feat-badge{
+  margin-left:auto;flex-shrink:0;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:#fff;font-size:10px;font-weight:600;
+  padding:4px 14px;border-radius:20px;letter-spacing:1px;
+}
+
+/* 防走丢区 */
+.floor-safe .card{border-color:rgba(102,126,234,0.15)}
+.floor-safe .card:hover{border-color:rgba(102,126,234,0.3)}
+
+/* 页脚 */
+.footer{text-align:center;padding:28px 16px 48px;font-size:11px;color:#b2bec3;letter-spacing:0.5px}
+
+/* 悬浮导航 */
+.side-nav{
+  position:fixed;right:10px;top:50%;transform:translateY(-50%);
+  z-index:99;display:flex;flex-direction:column;gap:10px;
+}
+.side-nav a{
+  width:38px;height:38px;border-radius:12px;
+  background:rgba(255,255,255,0.7);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.5);
+  box-shadow:0 2px 12px rgba(0,0,0,0.04);
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;font-size:15px;color:#667eea;transition:all 0.3s;position:relative;
+}
+.side-nav a:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(102,126,234,0.15);background:rgba(255,255,255,0.9)}
+.side-nav a:hover .tip{opacity:1;transform:translateX(-8px)}
+.tip{
+  position:absolute;right:46px;background:rgba(26,26,46,0.85);color:#fff;
+  padding:4px 12px;border-radius:8px;font-size:11px;white-space:nowrap;
+  opacity:0;transform:translateX(0);transition:all 0.3s;pointer-events:none;
+  backdrop-filter:blur(8px);
+}
+
+/* 客服按钮 - 右下角独立悬浮 */
+.service-float-btn{
+  position:fixed;right:14px;bottom:20px;z-index:99;
+  width:52px;height:52px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,#ee5a6f,#f093a0);
+  color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(238,90,111,0.4);
+  transition:all 0.3s;padding:0;
+}
+.service-float-btn svg{width:28px;height:28px;fill:#fff}
+.service-float-btn:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(238,90,111,0.5)}
+.service-float-btn::after{
+  content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid rgba(238,90,111,0.4);
+  animation:servicePulse 2s ease-in-out infinite;
+}
+@keyframes servicePulse{
+  0%,100%{opacity:0.4;transform:scale(1)}
+  50%{opacity:0;transform:scale(1.3)}
+}
+
+/* 客服弹窗遮罩 */
+.service-overlay{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,0.35);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;visibility:hidden;transition:all 0.3s ease;
+}
+.service-overlay.active{opacity:1;visibility:visible}
+
+/* 客服弹窗 */
+.service-modal{
+  background:rgba(255,255,255,0.82);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,0.7);
+  border-radius:24px;
+  padding:32px 28px 24px;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.12);
+  transform:scale(0.85) translateY(20px);
+  transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  max-width:320px;width:90%;position:relative;
+}
+.service-overlay.active .service-modal{transform:scale(1) translateY(0)}
+
+.service-modal .close-btn{
+  position:absolute;top:12px;right:14px;
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(0,0,0,0.06);border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:14px;color:#636e72;transition:all 0.2s;
+}
+.service-modal .close-btn:hover{background:rgba(0,0,0,0.12);color:#2d3436}
+
+.service-modal .modal-icon{
+  width:50px;height:50px;border-radius:14px;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:#fff;margin:0 auto 14px;
+}
+.service-modal .modal-title{font-size:17px;font-weight:700;color:#2d3436;margin-bottom:4px}
+.service-modal .modal-desc{font-size:12px;color:#8395a7;margin-bottom:18px}
+
+.service-modal .qr-box{
+  width:180px;height:180px;margin:0 auto 16px;
+  background:rgba(255,255,255,0.9);
+  border:1px solid rgba(0,0,0,0.06);
+  border-radius:16px;padding:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.04);
+}
+.service-modal .qr-box img{width:100%;height:100%;object-fit:contain;border-radius:10px}
+.service-modal .qr-placeholder{
+  width:100%;height:100%;border-radius:10px;
+  background:rgba(102,126,234,0.06);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:#8395a7;
+}
+
+.service-modal .scan-tip{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;color:#667eea;font-weight:600;
+  background:rgba(102,126,234,0.08);
+  padding:6px 16px;border-radius:20px;
+}
+
+
+/* ===== 响应式 ===== */
+@media(max-width:768px){
+  .card-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .card{padding:14px 8px 12px;border-radius:14px}
+  .card .ic{width:40px;height:40px;font-size:18px;border-radius:11px}
+  .card .name{font-size:12px}
+  .side-nav{right:6px}
+  .side-nav a{width:34px;height:34px;border-radius:10px;font-size:14px}
+  .floor{margin:18px auto}
+  .bookmark-tip{
+    font-size:11px;padding:14px 7px;letter-spacing:3px;
+  }
+}
+@media(max-width:400px){
+  .card-grid{gap:8px}
+  .card{padding:12px 6px 10px;border-radius:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+
+<!-- 顶部公告 -->
+<div class="top-notice">
+  <div class="notice-inner">
+    <span class="bell"><i class="ri-megaphone-line"></i></span>
+    <span>若访问受限请切换5G网络或WIFI · 资源持续更新</span>
+  </div>
+</div>
+
+<!-- 头部 -->
+<div class="header">
+  <div class="site-name">狐狐动漫仓</div>
+  <div class="site-title">漫画 / 追剧 / 动漫 / 小说 / 软件资源平台</div>
+</div>
+
+<!-- 第一楼层：极速直达区 -->
+<div class="floor" id="floor-hot">
+  <div class="floor-wrap">
+  <div class="floor-header">
+    <div class="floor-icon hot"><i class="ri-trophy-line"></i></div>
+    <span class="floor-label">最好用 · 极速直达区</span>
+  </div>
+  <div class="card-grid" id="grid-hot">
+    <a class="card-tip"><span class="marquee-wrap"><i class="ri-bookmark-line"></i> 将此页面存为书签 方便使用</span></a>
+  </div>
+  </div>
+</div>
+
+<!-- 第二楼层：资源下载区 -->
+<div class="floor floor-dl" id="floor-download">
+  <div class="floor-wrap">
+  <div class="floor-header">
+    <div class="floor-icon download"><i class="ri-download-cloud-2-line"></i></div>
+    <span class="floor-label">资源下载区</span>
+  </div>
+  <div class="card-grid" id="grid-download"></div>
+  </div>
+</div>
+
+<!-- 第三楼层：工具与防走丢 -->
+<div class="floor floor-safe" id="floor-safe">
+  <div class="floor-wrap">
+  <div class="floor-header">
+    <div class="floor-icon safe"><i class="ri-shield-check-line"></i></div>
+    <span class="floor-label">工具与防走丢</span>
+  </div>
+  <div class="card-grid" id="grid-safe"></div>
+  </div>
+</div>
+
+<!-- 页脚 -->
+<div class="footer">进不去隔天再进 · 网站不定时维护 · 本站资源持续更新</div>
+
+<!-- 悬浮导航 -->
+<nav class="side-nav">
+  <a href="index.html#floor-hot"><i class="ri-trophy-line"></i><span class="tip">极速直达</span></a>
+  <a href="index.html#floor-download"><i class="ri-download-cloud-2-line"></i><span class="tip">资源下载</span></a>
+  <a href="index.html#floor-safe"><i class="ri-shield-check-line"></i><span class="tip">防走丢</span></a>
+  <a href="javascript:void(0)" class="praise-nav-btn" onclick="openPraiseModal()"><img src="yibazhan/images/闲鱼好评.png" style="width:28px;height:28px;border-radius:8px" onerror="this.outerHTML='<i class=\'ri-star-smile-line\'></i>'"><span class="tip">闲鱼好评</span></a>
+</nav>
+
+<!-- 右下角独立客服按钮 - 小姐姐耳麦 -->
+<button class="service-float-btn" onclick="document.getElementById('serviceOverlay').classList.add('active')">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12v4c0 1.1.9 2 2 2h1c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4.08C4.52 7.57 7.92 4.5 12 4.5s7.48 3.07 7.92 7.5H19c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1h.5c-.28 1.16-1.34 2-2.5 2h-2c-.28-.6-.89-1-1.5-1h-2c-.83 0-1.5.67-1.5 1.5S12.67 22 13.5 22h2c.61 0 1.12-.35 1.38-.85C18.87 21.09 20.5 19.5 21 17.5c.6-.22 1-.8 1-1.5v-4c0-5.52-4.48-10-10-10z"/></svg>
+</button>
+
+<!-- 客服弹窗 -->
+<div class="service-overlay" id="serviceOverlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="service-modal">
+    <button class="close-btn" onclick="document.getElementById('serviceOverlay').classList.remove('active')"><i class="ri-close-line"></i></button>
+    <div class="modal-icon"><i class="ri-customer-service-2-line"></i></div>
+    <div class="modal-title">联系客服</div>
+    <div class="modal-desc">有问题随时找我，资源持续更新中</div>
+    <div class="qr-box">
+      <img id="serviceQR" src="yibazhan/images/客服姐姐（防丢失）.png" alt="客服二维码" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="qr-placeholder" style="display:none">暂无二维码</div>
+    </div>
+    <div class="scan-tip"><i class="ri-wechat-line"></i> 微信扫一扫添加客服</div>
+  </div>
+</div>
+
+<!-- 登录引导弹窗 -->
+<div class="login-guide-overlay" id="loginGuideOverlay">
+  <div class="login-guide-modal">
+    <div class="guide-title">📌 首次使用必看</div>
+    <div class="guide-desc">登录浏览器即可开启无广告体验，访问更快更稳定，海量漫画资源全部解锁</div>
+    <div class="guide-steps">
+      <span class="step-num">1</span> 点击底部右下角 <b>≡</b><br>
+      <span class="step-num">2</span> 点击 <b>请登录</b> → 完成登录<br>
+      <span class="step-num">3</span> 再次点击底部右下角 <b>≡</b><br>
+      <span class="step-num">4</span> 点击左下角 <span class="step-bookmark">加书签</span>（方便下次使用）
+    </div>
+    <button class="btn-logged" onclick="handleLogged()">我已完成，进入网站</button>
+  </div>
+</div>
+
+<!-- 好评图弹窗 -->
+<div class="praise-overlay" id="praiseOverlay" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="praise-modal">
+    <button class="close-btn" onclick="document.getElementById('praiseOverlay').classList.remove('active')"><i class="ri-close-line"></i></button>
+    <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ffc832,#ff9500);display:flex;align-items:center;justify-content:center;margin:0 auto 12px"><i class="ri-star-smile-fill" style="font-size:20px;color:#fff"></i></div>
+    <div class="modal-title">用户好评</div>
+    <div class="modal-desc">感谢大家的认可与支持<br><span style="color:#ffc832;font-weight:600">随意下载一张图片即可评价</span></div>
+    <div class="praise-list" id="praiseList">
+      <div class="praise-empty">加载中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 图片预览放大遮罩 -->
+<div class="praise-preview-overlay" id="praisePreview" onclick="if(event.target===this)this.classList.remove('active')">
+  <button class="preview-close" onclick="document.getElementById('praisePreview').classList.remove('active')"><i class="ri-close-line"></i></button>
+  <img id="praisePreviewImg" src="index.html" alt="好评图预览">
+  <div class="preview-tip"><i class="ri-download-line"></i> 长按图片即可保存到相册</div>
+</div>
+
+<script>
+const API = '/api.php/api';
+
+// 登录引导弹窗逻辑
+(function(){
+  // 测试后门：?test=1 清除标记，每次都弹登录引导
+  try {
+    if(new URLSearchParams(window.location.search).get('test')==='1'){
+      localStorage.removeItem('xunlei_logged');
+    }
+  } catch(e){}
+  // 已标记过"我已登录"的用户不再弹
+  if(localStorage.getItem('xunlei_logged')) return;
+  // 延迟1秒弹出，避免和页面加载冲突
+  setTimeout(function(){
+    document.getElementById('loginGuideOverlay').classList.add('active');
+  }, 1000);
+})();
+
+// 点击"去登录" — 高亮图片，按钮变成"我已登录完成"
+function handleGoLogin(){
+  var img = document.getElementById('guideImg');
+  img.classList.add('highlight');
+  // 闪烁效果
+  setTimeout(function(){ img.classList.remove('highlight'); }, 600);
+  setTimeout(function(){ img.classList.add('highlight'); }, 900);
+  // 按钮变成"我已登录完成"
+  var btn = document.getElementById('btnGoLogin');
+  btn.textContent = '我已登录完成';
+  btn.onclick = handleLogged;
+  btn.className = 'btn-logged';
+}
+
+// 点击"我已登录" — 存标记，关闭弹窗，滚动到书签提示条
+function handleLogged(){
+  localStorage.setItem('xunlei_logged', '1');
+  document.getElementById('loginGuideOverlay').classList.remove('active');
+  // 延迟后滚动到书签收藏提示条并高亮闪烁
+  setTimeout(function(){
+    var tip = document.querySelector('.card-tip');
+    if(tip){
+      tip.scrollIntoView({behavior:'smooth',block:'center'});
+      tip.style.transition = 'all 0.3s';
+      tip.style.background = 'rgba(102,126,234,0.15)';
+      tip.style.borderColor = 'rgba(102,126,234,0.4)';
+      setTimeout(function(){
+        tip.style.background = '';
+        tip.style.borderColor = '';
+      }, 1500);
+    }
+  }, 400);
+}
+
+// 好评图弹窗
+function openPraiseModal() {
+  const overlay = document.getElementById('praiseOverlay');
+  overlay.classList.add('active');
+  loadPraiseImages();
+}
+
+function loadPraiseImages() {
+  fetch(API + '/praise').then(r => r.json()).then(d => {
+    const list = document.getElementById('praiseList');
+    if (d.code === 200 && d.data && d.data.length > 0) {
+      list.innerHTML = '';
+      d.data.forEach(img => {
+        const div = document.createElement('div');
+        div.className = 'praise-item';
+        div.innerHTML = `<img src="http://link520.cn/${img.url}" alt="好评图"><a class="save-btn" href="javascript:void(0)" onclick="openPraisePreview('${img.url}')"><i class="ri-download-line"></i> 点击保存评价</a>`;
+        list.appendChild(div);
+      });
+    } else {
+      list.innerHTML = '<div class="praise-empty">暂无好评图</div>';
+    }
+  }).catch(() => {
+    document.getElementById('praiseList').innerHTML = '<div class="praise-empty">加载失败</div>';
+  });
+}
+
+// 打开图片预览（放大后长按保存）
+function openPraisePreview(url) {
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (!isIOS) {
+    // 安卓/电脑：直接下载
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return;
+  }
+  // iOS：弹出放大预览，引导长按保存
+  document.getElementById('praisePreviewImg').src = url;
+  document.getElementById('praisePreview').classList.add('active');
+}
+
+// 渲染单个卡片
+function renderCard(item) {
+  const a = document.createElement('a');
+  a.href = item.url;
+  a.target = '_blank';
+
+  // 主推卡片
+  if (parseInt(item.is_featured)) {
+    a.className = 'card-featured';
+    a.innerHTML = `<div class="ic"><img src="http://link520.cn/${item.icon}" alt=""></div>` +
+      `<div class="feat-info"><span class="feat-name">${item.title}</span>` +
+      `<span class="feat-desc">${item.subtitle || ''}</span></div>` +
+      `<span class="feat-badge">站长主推</span>`;
+    return a;
+  }
+
+  // 普通卡片
+  a.className = 'card';
+  let html = `<div class="ic">${item.icon ? '<img src="http://link520.cn/'+item.icon+'" alt="">' : '<i class="ri-link"></i>'}</div>`;
+  html += `<span class="name">${item.title}</span>`;
+
+  // 副标题（线路标签）
+  if (item.subtitle) {
+    if (item.subtitle.includes('线路1')) {
+      html += `<span class="tag r1">线路1</span>`;
+    } else if (item.subtitle.includes('线路2')) {
+      html += `<span class="tag r2">线路2</span>`;
+    } else {
+      html += `<span class="sub">${item.subtitle}</span>`;
+    }
+  }
+
+  // 提取码
+  if (item.extract_code) {
+    html += `<span class="extract" onclick="event.preventDefault();event.stopPropagation();navigator.clipboard.writeText('${item.extract_code}');this.textContent='已复制 ✓';setTimeout(()=>this.textContent='提取码: ${item.extract_code}',1500)">提取码: ${item.extract_code}</span>`;
+  }
+
+  a.innerHTML = html;
+  return a;
+}
+
+// 加载链接数据
+fetch(API + '/links').then(r => r.json()).then(d => {
+  if (d.code !== 200) return;
+  const grouped = d.data.grouped;
+
+  // 渲染三个楼层
+  ['hot', 'download', 'safe'].forEach(floor => {
+    const grid = document.getElementById('grid-' + floor);
+    if (!grid || !grouped[floor]) return;
+    grouped[floor].forEach(item => {
+      grid.appendChild(renderCard(item));
+    });
+  });
+}).catch(e => console.error('加载链接失败:', e));
+
+// 加载配置（客服二维码）
+fetch(API + '/config').then(r => r.json()).then(d => {
+  if (d.code === 200 && d.data) {
+    if (d.data.service_qrcode) {
+      const img = document.getElementById('serviceQR');
+      if (img) img.src = d.data.service_qrcode;
+    }
+  }
+}).catch(() => {});
+
+// 迅雷浏览器检测（来自原版逻辑）
+(function(){
+  // 测试后门：?force_xunlei=1 可强制放行
+  try {
+    if(new URLSearchParams(window.location.search).get('force_xunlei')==='1') return;
+  } catch(e){}
+
+  var ua = (navigator.userAgent||'').toLowerCase();
+
+  // 迅雷识别关键词
+  var isXunlei = ua.includes('xunlei') || ua.includes('thunder') || ua.includes('xlliveud') ||
+                 ua.includes('xldl') || ua.includes('xlive') || ua.includes('xlbrowser') ||
+                 /xunlei\//.test(ua);
+
+  // iOS特殊识别：迅雷iOS版UA含safari/537.36但不含version/
+  var isLikelyXunleiOnIOS = ua.includes('safari/537.36') && !ua.includes('version/');
+
+  var isIOS = ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod');
+  var isMobile = /android|iphone|ipad|ipod|harmonyos|mobile/.test(ua);
+
+  var blocked = false;
+  var msg = '请在迅雷浏览器访问';
+
+  if(isIOS){
+    // iOS：迅雷标识或启发式匹配则放行
+    if(isXunlei || isLikelyXunleiOnIOS) return;
+    blocked = true;
+  } else if(!isMobile){
+    // 电脑端：直接拦截
+    msg = '请用手机端迅雷浏览器访问';
+    blocked = true;
+  } else {
+    // 安卓：迅雷标识直接放行
+    if(isXunlei) return;
+    // 黑名单：拦截已知非迅雷浏览器
+    var suspicious = [
+      // QQ系
+      'qqbrowser','mqqbrowser',
+      // UC系
+      'ucbrowser','ucweb',
+      // 百度系
+      'baidubox','baidubrowser','baiduinput',
+      // 搜狗
+      'sogou','sogoumobilebrowser','sogoumse',
+      // 360
+      '360','qihoo','qihu',
+      // 猎豹
+      'liebao','lbbrowser',
+      // 微信/QQ内置
+      'micromessenger','wechat','qq/',
+      // Opera
+      'opera mini','opr/',
+      // 华为自带
+      'huaweibrowser','hbpc/',
+      // 小米自带
+      'miuibrowser','mibrowser',
+      // OPPO自带
+      'heytapbrowser','oppobrowser',
+      // vivo自带
+      'vivobrowser',
+      // 三星自带
+      'samsungbrowser',
+      // 荣耀自带
+      'honorbrowser',
+      // 联想/中兴等
+      'lenovobrowser','ztebrowser',
+      // 夸克
+      'quark',
+      // 2345浏览器
+      '2345browser','2345explorer',
+      // 遨游
+      'maxthon',
+      // 世界之窗
+      'theworld',
+      // 绿色浏览器
+      'greenbrowser',
+      // Via浏览器
+      'via/',
+      // 多御浏览器
+      'duoyu',
+      // 鲸鱼浏览器
+      'whale',
+      // Firefox
+      'firefox','fxios'
+    ];
+    if(suspicious.some(function(k){ return ua.includes(k); })){
+      blocked = true;
+    }
+  }
+
+  if(!blocked) return;
+
+  // 显示拦截弹窗
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);overflow-y:auto;padding:20px 0';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:20px;padding:28px 20px;text-align:center;max-width:360px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.3)';
+  box.innerHTML = '<div style="font-size:40px;margin-bottom:12px">⚠️</div>' +
+    '<div style="font-size:20px;font-weight:700;color:#1a1a2e;margin-bottom:8px">访问受限</div>' +
+    '<div style="font-size:15px;color:#666;margin-bottom:20px">' + msg + '</div>' +
+    '<a href="https://x.xunlei.com/?from=0x30800009" target="_blank" style="display:block;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:12px;padding:13px 32px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;width:100%;text-align:center;margin-bottom:16px">下载迅雷浏览器</a>' +
+    '<div style="font-size:14px;font-weight:600;color:#1a1a2e;margin-bottom:12px">📖 使用教程</div>' +
+    '<div style="text-align:left;font-size:13px;color:#555;line-height:2.2;padding:12px 16px;background:#f8f9fa;border-radius:12px">' +
+    '<b>❶</b> 下载并安装迅雷浏览器<br>' +
+    '<b>❷</b> 打开迅雷浏览器，搜索🔍【狐狐看漫】<br>' +
+    '<b>❸</b> 等待2秒，弹出"狐狐动漫仓"点击立即打开<br>' +
+    '<b>❹</b> 收藏为标签，方便下次阅读</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+})();
+
+// 访客统计上报
+fetch('api.php/api/visit', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({page: location.pathname})
+}).catch(()=>{});
+</script>
+</body>
+</html>

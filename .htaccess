@@ -1,0 +1,29 @@
+RewriteEngine On
+
+# 排除实际存在的文件和目录
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# 排除已经是 xiazai.html 的请求，防止循环
+RewriteCond %{REQUEST_URI} !^/xiazai\.html
+
+# 排除PHP文件和其他系统文件
+RewriteCond %{REQUEST_URI} !\.php$
+RewriteCond %{REQUEST_URI} !\.css$
+RewriteCond %{REQUEST_URI} !\.js$
+RewriteCond %{REQUEST_URI} !\.html$
+
+# 短链接重写（支持中文）
+RewriteRule ^([^<>"'\s\\/?#&]+)$ handle_short_url.php?custom=$1 [L,QSA]
+
+# 防止直接访问配置文件
+<FilesMatch "config\.php">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# 字符编码
+AddDefaultCharset UTF-8
+
+# 禁止目录浏览
+Options -Indexes

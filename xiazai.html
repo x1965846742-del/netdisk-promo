@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="keywords" content="网盘资源,免费资源,资源下载">
+    <title id="pageTitle">查看网盘文件</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #8b5cf6;
+            --secondary: #0ea5e9;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-900: #0f172a;
+            --gray-800: #1e293b;
+            --gray-700: #334155;
+            --gray-600: #475569;
+            --gray-500: #64748b;
+            --gray-400: #94a3b8;
+            --gray-300: #cbd5e1;
+            --gray-200: #e2e8f0;
+            --gray-100: #f1f5f9;
+            --white: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--gray-800);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        body.with-preview-download {
+            padding-bottom: 88px;
+        }
+
+        @media (min-width: 901px) {
+            body.with-preview-download { padding-bottom: 0; }
+        }
+
+        .page-stack {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .preview-banner {
+            width: 100%;
+            min-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 20px 20px;
+            box-sizing: border-box;
+            background: rgba(15, 12, 41, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .preview-banner.hidden { display: none !important; }
+
+        .preview-banner-inner {
+            width: 100%;
+            max-width: 920px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .preview-banner-title {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .preview-banner img {
+            max-width: 100%;
+            max-height: min(70vh, 700px);
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .scroll-cue {
+            margin-top: 24px;
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            animation: bounceY 1.8s ease-in-out infinite;
+        }
+
+        .scroll-cue i { color: var(--secondary); }
+
+        @keyframes bounceY {
+            0%, 100% { transform: translateY(0); opacity: 0.85; }
+            50% { transform: translateY(7px); opacity: 1; }
+        }
+
+        .mobile-open-pan {
+            display: none;
+            position: fixed;
+            left: 14px;
+            right: 14px;
+            bottom: 18px;
+            z-index: 60;
+            padding: 14px 18px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            box-shadow: 0 8px 28px rgba(99, 102, 241, 0.55);
+        }
+
+        @media (max-width: 900px) {
+            body.with-preview-download .mobile-open-pan {
+                display: block;
+            }
+        }
+
+        /* 动态背景 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page-stack.with-preview .container {
+            min-height: unset;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            gap: 80px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        /* 主卡片 */
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 28px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            width: 400px;
+            max-width: 100%;
+            animation: slideUp 0.6s ease;
+            flex-shrink: 0;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 卡片头部 */
+        .card-header {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            padding: 28px 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 30px;
+            margin-bottom: 16px;
+        }
+
+        .platform-logo {
+            width: 28px;
+            height: 28px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .platform-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .file-name {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.4;
+            word-break: break-all;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 卡片内容 */
+        .card-body {
+            padding: 32px 28px;
+        }
+
+        .scan-tip {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .scan-tip-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: white;
+            font-size: 22px;
+        }
+
+        .scan-tip h3 {
+            color: var(--gray-800);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .scan-tip p {
+            color: var(--gray-500);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .scan-tip .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* 二维码区域 */
+        .qrcode-wrapper {
+            background: linear-gradient(135deg, var(--gray-50), var(--gray-100));
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            border: 2px dashed var(--gray-200);
+            margin-bottom: 24px;
+        }
+
+        #qrcode {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+            background: white;
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        #qrcode img, #qrcode canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .qrcode-label {
+            margin-top: 16px;
+            color: var(--gray-500);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .qrcode-label i {
+            color: var(--primary);
+        }
+
+        /* 步骤说明 */
+        .steps {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 16px 8px;
+            background: var(--gray-50);
+            border-radius: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .step:hover {
+            background: var(--gray-100);
+            transform: translateY(-2px);
+        }
+
+        .step-num {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            margin: 0 auto 10px;
+        }
+
+        .step-text {
+            color: var(--gray-600);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        /* 返回按钮 */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+
+        /* 演示图片 */
+        .demo-section {
+            width: 380px;
+            flex-shrink: 0;
+            animation: slideUp 0.6s ease 0.2s both;
+        }
+
+        .demo-section img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.3));
+        }
+
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 响应式 */
+        @media (max-width: 900px) {
+            .page-stack.with-preview .preview-banner {
+                min-height: 78vh;
+            }
+
+            .container {
+                flex-direction: column;
+                padding: 20px 16px;
+                gap: 30px;
+                min-height: unset;
+            }
+
+            .demo-section {
+                display: none;
+            }
+
+            .main-card {
+                width: 100%;
+                max-width: 420px;
+            }
+
+            .card-header {
+                padding: 24px 20px;
+            }
+
+            .file-name {
+                font-size: 18px;
+            }
+
+            .card-body {
+                padding: 24px 20px;
+            }
+
+            .steps {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .step {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                text-align: left;
+                padding: 12px 16px;
+            }
+
+            .step-num {
+                margin: 0;
+                flex-shrink: 0;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+
+        /* 隐藏类 */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="page-stack" id="pageStack">
+    <section id="previewBanner" class="preview-banner hidden" aria-label="资源预览">
+        <div class="preview-banner-inner">
+            <div class="preview-banner-title" id="previewBannerTitle">资源预览</div>
+            <img id="previewHeroImg" src="" alt="资源预览图" decoding="async">
+            <div class="scroll-cue">
+                <i class="fas fa-arrow-down"></i>
+                <span>继续向下滑动查看二维码</span>
+            </div>
+        </div>
+    </section>
+    <div class="container">
+        <div class="main-card">
+            <div class="card-header">
+                <div class="platform-badge">
+                    <div class="platform-logo" id="platformLogo" style="background-image: url('kuake1.png')"></div>
+                    <span class="platform-name" id="appName">夸克网盘</span>
+                </div>
+                <div class="file-name" id="fileName">查看网盘文件</div>
+            </div>
+            
+            <div class="card-body">
+                <div class="scan-tip">
+                    <div class="scan-tip-icon">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <h3>扫码获取资源</h3>
+                    <p>请使用 <span class="highlight" id="appNameHighlight">夸克APP</span> 或手机浏览器扫描二维码</p>
+                </div>
+
+                <div class="qrcode-wrapper">
+                    <div id="qrcode"></div>
+                    <div class="qrcode-label">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>手机扫码即可访问</span>
+                    </div>
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-num">1</div>
+                        <div class="step-text">打开APP</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">2</div>
+                        <div class="step-text">点击扫一扫</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">3</div>
+                        <div class="step-text">扫描二维码</div>
+                    </div>
+                </div>
+
+                <div class="btn-group" id="btnGroup">
+                    <a href="javascript:history.back()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </a>
+                    <a href="/" class="btn btn-primary hidden" id="homeBtn">
+                        <i class="fas fa-home"></i> 返回主页
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <img id="demoImg" src="kuake2.png" alt="扫码示例">
+        </div>
+    </div>
+    </div>
+
+    <a id="mobileOpenPanBtn" class="mobile-open-pan" href="#" target="_blank" rel="noopener noreferrer">
+        <i class="fas fa-external-link-alt"></i> 打开网盘链接
+    </a>
+
+    <div class="footer">
+        © 2024-2030 分享资源 · 滴水石穿
+    </div>
+
+    <script>
+        // 检测是否为移动设备
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // 网盘平台配置
+        const platformConfig = {
+            quark: { name: "夸克网盘", logoImg: "kuake1.png", demoImg: "kuake2.png" },
+            "yun.139.com": { name: "移动云盘", logoImg: "yidong1.png", demoImg: "yidong2.png" },
+            "diskyun.com": { name: "快兔网盘", logoImg: "kuaitu1.png", demoImg: "kuaitu2.png" },
+            "pan.wo.cn": { name: "联通云盘", logoImg: "liantong1.png", demoImg: "liantong2.png" },
+            xunlei: { name: "迅雷网盘", logoImg: "xunlei1.png", demoImg: "xunlei2.png" },
+            wkbrowser: { name: "悟空浏览器", logoImg: "wukong1.png", demoImg: "wukong2.png" },
+            "uc.cn": { name: "UC网盘", logoImg: "uc1.png", demoImg: "uc2.png" },
+            baidu: { name: "百度网盘", logoImg: "baidu1.png", demoImg: "baidu2.png" }
+        };
+
+        // 判断链接类型
+        function getPlatformType(url) {
+            if (!url) return 'quark';
+            for (const [key, config] of Object.entries(platformConfig)) {
+                if (url.includes(key)) return key;
+            }
+            return 'normal';
+        }
+        
+        // 判断是否为网盘链接
+        function isCloudDriveUrl(url) {
+            if (!url) return false;
+            const keywords = ['quark', 'xunlei', 'wkbrowser', 'uc.cn', 'baidu.com/s/', 'pan.baidu.com', 'yun.139.com', 'diskyun.com', 'pan.wo.cn'];
+            return keywords.some(k => url.includes(k));
+        }
+
+        // 更新界面
+        function updatePlatformUI(platformType) {
+            const config = platformConfig[platformType];
+            if (!config) return;
+            
+            document.getElementById('appName').textContent = config.name;
+            document.getElementById('appNameHighlight').textContent = config.name;
+            document.getElementById('platformLogo').style.backgroundImage = `url(${config.logoImg})`;
+            document.getElementById('demoImg').src = config.demoImg;
+        }
+
+        function isSafePreviewUrl(u) {
+            if (!u || typeof u !== 'string') return '';
+            const t = u.trim();
+            if (/^https?:\/\//i.test(t)) return t;
+            if (t.startsWith('/')) return t;
+            if (/^uploads\/previews\//i.test(t)) return t;
+            return '';
+        }
+
+        function applyPreviewBanner(previewRaw, titleName) {
+            const safe = isSafePreviewUrl(previewRaw || '');
+            const banner = document.getElementById('previewBanner');
+            const img = document.getElementById('previewHeroImg');
+            const titleEl = document.getElementById('previewBannerTitle');
+            const pageStack = document.getElementById('pageStack');
+            const fab = document.getElementById('mobileOpenPanBtn');
+
+            if (!safe) {
+                banner.classList.add('hidden');
+                pageStack.classList.remove('with-preview');
+                document.body.classList.remove('with-preview-download');
+                fab.removeAttribute('href');
+                return false;
+            }
+
+            titleEl.textContent = titleName ? ('预览：' + titleName) : '资源预览';
+            img.src = safe;
+            img.alt = titleName ? ('预览：' + titleName) : '资源预览图';
+            banner.classList.remove('hidden');
+            pageStack.classList.add('with-preview');
+            document.body.classList.add('with-preview-download');
+            return true;
+        }
+
+        // 初始化
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryString = window.location.search;
+
+        checkHomepageEnabled();
+
+        if (urlParams.get('error') === 'notfound') {
+            showError('链接不存在或已失效');
+        } else if (urlParams.get('type') === 'custom' && urlParams.get('custom')) {
+            fetch(`get_custom_url.php?custom=${encodeURIComponent(urlParams.get('custom'))}`)
+                .then(r => r.json())
+                .then(handleUrlResult)
+                .catch(() => showError('链接不存在或已失效'));
+        } else if (queryString.startsWith('?=')) {
+            const code = queryString.substring(2);
+            if (!code) {
+                showError('链接不存在或已失效');
+            } else {
+                fetch(`get_original_url.php?code=${code}`)
+                    .then(r => r.json())
+                    .then(handleUrlResult)
+                    .catch(() => showError('链接不存在或已失效'));
+            }
+        } else {
+            showError('链接格式错误');
+        }
+
+        function handleUrlResult(data) {
+            if (data.success && data.url) {
+                window.originalUrl = data.url;
+
+                if (!isCloudDriveUrl(data.url)) {
+                    window.location.href = data.url;
+                    return;
+                }
+
+                const platformType = getPlatformType(data.url);
+                updatePlatformUI(platformType);
+
+                const fileName = data.name || '查看网盘文件';
+                document.getElementById('pageTitle').textContent = fileName;
+                document.getElementById('fileName').textContent = fileName;
+
+                const hasPreview = applyPreviewBanner(data.preview_image || '', fileName);
+
+                const mobile = isMobile();
+                if (mobile && !hasPreview) {
+                    window.location.href = data.url;
+                    return;
+                }
+
+                if (hasPreview && mobile) {
+                    const fab = document.getElementById('mobileOpenPanBtn');
+                    fab.href = data.url;
+                }
+
+                const qrcodeContainer = document.getElementById("qrcode");
+                qrcodeContainer.innerHTML = '';
+                new QRCode(qrcodeContainer, {
+                    text: data.url,
+                    width: 156,
+                    height: 156,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                showError(data.error || '链接不存在或已失效');
+            }
+        }
+
+        async function checkHomepageEnabled() {
+            try {
+                const response = await fetch('get_homepage_settings.php');
+                const data = await response.json();
+                
+                if (data.success && data.settings.homepage_enabled === '1') {
+                    document.getElementById('homeBtn').classList.remove('hidden');
+                }
+            } catch (e) {}
+        }
+
+        async function showError(message) {
+            let contactInfo = 'QQ:155215141';
+            let homepageEnabled = false;
+            
+            try {
+                const response = await fetch('get_homepage_settings.php');
+                const data = await response.json();
+                if (data.success) {
+                    homepageEnabled = data.settings.homepage_enabled === '1';
+                    if (data.settings.contact_qq) {
+                        const qq = data.settings.contact_qq;
+                        contactInfo = /[\u4e00-\u9fa5:：]/.test(qq) ? qq : `QQ:${qq}`;
+                    }
+                }
+            } catch (e) {}
+            
+            document.body.innerHTML = `
+                <div class="container">
+                    <div class="main-card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #ef4444, #f97316);">
+                            <div class="platform-badge">
+                                <i class="fas fa-exclamation-triangle" style="color: white; font-size: 20px;"></i>
+                                <span class="platform-name">链接错误</span>
+                            </div>
+                            <div class="file-name">${message}</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="scan-tip">
+                                <div class="scan-tip-icon" style="background: linear-gradient(135deg, #ef4444, #f97316);">
+                                    <i class="fas fa-link-slash"></i>
+                                </div>
+                                <h3>无法访问资源</h3>
+                                <p>该链接可能已失效或不存在<br>请联系管理员获取最新资源</p>
+                            </div>
+                            
+                            <div style="background: var(--gray-50); padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 24px;">
+                                <p style="color: var(--gray-500); font-size: 14px; margin-bottom: 8px;">联系方式</p>
+                                <p style="color: var(--gray-800); font-size: 18px; font-weight: 700;">${contactInfo}</p>
+                            </div>
+                            
+                            <div class="btn-group" style="flex-direction: column;">
+                                <a href="javascript:history.back()" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> 返回上一页
+                                </a>
+                                ${homepageEnabled ? `
+                                <a href="/" class="btn btn-primary">
+                                    <i class="fas fa-home"></i> 返回主页
+                                </a>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer">© 2024-2030 分享资源 · 滴水石穿</div>
+            `;
+        }
+    </script>
+</body>
+</html>
