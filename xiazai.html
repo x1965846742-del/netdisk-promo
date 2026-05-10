@@ -484,6 +484,76 @@
             }
         }
 
+        /* iOS 复制链接模块 */
+        .copy-link-wrapper {
+            background: #fff;
+            border-radius: 14px;
+            padding: 6px;
+            display: flex;
+            gap: 8px;
+            border: 2px solid var(--gray-200);
+            margin-top: 24px;
+        }
+
+        .copy-link-input {
+            flex: 1;
+            padding: 13px 14px;
+            border: none;
+            background: var(--gray-50);
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--gray-700);
+            word-break: break-all;
+            outline: none;
+            min-width: 0;
+            user-select: all;
+        }
+
+        .copy-link-btn {
+            padding: 12px 18px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .copy-link-btn:active {
+            transform: scale(0.95);
+            opacity: 0.9;
+        }
+
+        .copy-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0, 0, 0, 0.82);
+            color: #fff;
+            padding: 14px 26px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.25s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .copy-toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
         /* 隐藏类 */
         .hidden { display: none !important; }
     </style>
@@ -496,7 +566,7 @@
             <img id="previewHeroImg" src="" alt="资源预览图" decoding="async">
             <div class="scroll-cue">
                 <i class="fas fa-arrow-down"></i>
-                <span>继续向下滑动查看二维码</span>
+                <span id="scrollCueText">继续向下滑动查看二维码</span>
             </div>
         </div>
     </section>
@@ -563,6 +633,8 @@
         <i class="fas fa-external-link-alt"></i> 打开网盘链接
     </a>
 
+    <div class="copy-toast" id="copyToast">链接已复制</div>
+
     <div class="footer">
         © 2024-2030 分享资源 · 滴水石穿
     </div>
@@ -571,6 +643,11 @@
         // 检测是否为移动设备
         function isMobile() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // 检测是否为 iOS 设备
+        function isIOS() {
+            return /iPhone|iPad|iPod/i.test(navigator.userAgent);
         }
 
         // 网盘平台配置
@@ -692,29 +769,160 @@
                 const hasPreview = applyPreviewBanner(data.preview_image || '', fileName);
 
                 const mobile = isMobile();
-                if (mobile && !hasPreview) {
+                const ios = isIOS();
+
+                if (mobile && !hasPreview && !ios) {
                     window.location.href = data.url;
                     return;
                 }
 
-                if (hasPreview && mobile) {
-                    const fab = document.getElementById('mobileOpenPanBtn');
-                    fab.href = data.url;
-                }
+                if (ios) {
+                    document.getElementById('mobileOpenPanBtn').classList.add('hidden');
+                    if (hasPreview) {
+                        document.getElementById('scrollCueText').textContent = '继续向下滑动查看详情';
+                    }
+                    buildIOSCardBody(data.url);
+                } else if (platformType === 'yun.139.com' && !mobile) {
+                    // 移动云盘电脑端：简化卡片，点击跳转
+                    document.getElementById('mobileOpenPanBtn').classList.add('hidden');
+                    if (hasPreview) {
+                        document.getElementById('scrollCueText').textContent = '继续向下滑动查看详情';
+                    }
+                    buildDesktopJumpCard(data.url);
+                } else {
+                    if (hasPreview && mobile) {
+                        const fab = document.getElementById('mobileOpenPanBtn');
+                        fab.href = data.url;
+                    }
 
-                const qrcodeContainer = document.getElementById("qrcode");
-                qrcodeContainer.innerHTML = '';
-                new QRCode(qrcodeContainer, {
-                    text: data.url,
-                    width: 156,
-                    height: 156,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
+                    const qrcodeContainer = document.getElementById("qrcode");
+                    qrcodeContainer.innerHTML = '';
+                    new QRCode(qrcodeContainer, {
+                        text: data.url,
+                        width: 156,
+                        height: 156,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
             } else {
                 showError(data.error || '链接不存在或已失效');
             }
+        }
+
+        // 为 iOS 用户构建复制链接界面
+        function buildIOSCardBody(url) {
+            const cardBody = document.querySelector('.main-card .card-body');
+            if (!cardBody) return;
+
+            cardBody.innerHTML = `
+                <div class="scan-tip">
+                    <div class="scan-tip-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <h3>复制链接至手机自带浏览器打开</h3>
+                </div>
+
+                <div class="copy-link-wrapper">
+                    <input class="copy-link-input" id="copyLinkInput" value="${escapeHTML(url)}" readonly onclick="this.select()">
+                    <button class="copy-link-btn" id="copyLinkBtn" onclick="copyLinkToClipboard()">
+                        <i class="fas fa-copy"></i> 复制
+                    </button>
+                </div>
+            `;
+        }
+
+        // 为移动云盘电脑端构建点击跳转界面
+        function buildDesktopJumpCard(url) {
+            const cardBody = document.querySelector('.main-card .card-body');
+            const demoSection = document.querySelector('.demo-section');
+            if (!cardBody) return;
+
+            // 隐藏演示图
+            if (demoSection) demoSection.classList.add('hidden');
+
+            cardBody.innerHTML = `
+                <div class="scan-tip">
+                    <div class="scan-tip-icon">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <h3>点击跳转下载</h3>
+                </div>
+
+                <div class="btn-group">
+                    <a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-external-link-alt"></i> 前往网盘下载
+                    </a>
+                </div>
+
+                <div class="btn-group" style="margin-top: 12px;">
+                    <a href="javascript:history.back()" class="btn btn-secondary" style="flex: 1;">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </a>
+                    <a href="/" class="btn btn-secondary hidden" id="desktopHomeBtn" style="flex: 1;">
+                        <i class="fas fa-home"></i> 返回主页
+                    </a>
+                </div>
+            `;
+
+            // 检查主页开关
+            fetch('get_homepage_settings.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.settings.homepage_enabled === '1') {
+                        const homeBtn = document.getElementById('desktopHomeBtn');
+                        if (homeBtn) homeBtn.classList.remove('hidden');
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // 转义 HTML 防止 XSS
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // 复制链接到剪贴板
+        function copyLinkToClipboard() {
+            const input = document.getElementById('copyLinkInput');
+            const btn = document.getElementById('copyLinkBtn');
+            const toast = document.getElementById('copyToast');
+            if (!input || !toast) return;
+
+            const url = input.value;
+
+            // 优先使用 Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showCopyToast(toast);
+                }).catch(() => {
+                    fallbackCopy(input, toast);
+                });
+            } else {
+                fallbackCopy(input, toast);
+            }
+        }
+
+        function fallbackCopy(input, toast) {
+            input.select();
+            input.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showCopyToast(toast);
+            } catch (e) {
+                toast.textContent = '复制失败，请手动选择链接';
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
+            }
+        }
+
+        function showCopyToast(toast) {
+            toast.textContent = '链接已复制';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
         async function checkHomepageEnabled() {
